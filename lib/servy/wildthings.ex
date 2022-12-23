@@ -1,19 +1,38 @@
 defmodule Servy.Wildthings do
   alias Servy.Bear
 
+  @db_path Path.expand("lib/servy/db", File.cwd!())
+
   def list_bears do
-    [
-      %Bear{id: 1, name: "Teddy", type: "Brown", hibernating: true},
-      %Bear{id: 2, name: "Smokey", type: "Black"},
-      %Bear{id: 3, name: "Paddington", type: "Brown"},
-      %Bear{id: 4, name: "Scarface", type: "Grizzly", hibernating: true},
-      %Bear{id: 5, name: "Snow", type: "Polar"},
-      %Bear{id: 6, name: "Brutus", type: "Grizzly"},
-      %Bear{id: 7, name: "Rosie", type: "Black", hibernating: true},
-      %Bear{id: 8, name: "Roscoe", type: "Panda"},
-      %Bear{id: 9, name: "Iceman", type: "Polar", hibernating: true},
-      %Bear{id: 10, name: "Kenai", type: "Grizzly"}
-    ]
+    @db_path
+    |> Path.join("bears.json")
+    |> read_json()
+    |> Jason.decode!(keys: :atoms)
+    |> create_bear_list()
+  end
+
+  defp read_json(source) do
+    case File.read(source) do
+      {:ok, contents} ->
+        contents
+      {:error, reason} ->
+        IO.inspect "Error reading #{source}: #{reason}"
+        "[]"
+    end
+  end
+
+  defp parse_list([%{id: id, name: name, type: type, hibernating: hibernating } | tail], bears_created) do
+    parse_list(tail, [%Bear{id: id, name: name, type: type, hibernating: hibernating} | bears_created ])
+  end
+
+  defp parse_list([%{id: id, name: name, type: type } | tail], bears_created) do
+    parse_list(tail, [%Bear{id: id, name: name, type: type} | bears_created ])
+  end
+
+  defp parse_list([], bears_created), do: bears_created |> Enum.reverse()
+
+  def create_bear_list(bears)  do
+    parse_list(bears, [])
   end
 
   def get_bear(id) when is_integer(id) do
