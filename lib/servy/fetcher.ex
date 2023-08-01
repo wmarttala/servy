@@ -1,13 +1,13 @@
 defmodule Servy.Fetcher do
 
-  def async(camera_name) do
+  def async(fun) do
     parent = self()
 
-    spawn(fn -> send(parent, {:result, Servy.VideoCam.get_snapshot(camera_name)}) end)
+    spawn(fn -> send(parent, {self(), :result, fun.()}) end)
   end
 
-  def get_result do
-    receive do {:result, filename} -> filename end
+  def get_result(pid) do
+    receive do {^pid, :result, value} -> value end
   end
 
 end
